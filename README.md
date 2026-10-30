@@ -5,16 +5,15 @@ beside it.
 
 ## Examples
 
-![43% Burnt](examples/dep-43-burnt.jpg)
-
-**The Dillinger Escape Plan — 43% Burnt.** Dense and loud almost throughout,
-so it saturates toward white; the vertical seams are the stop-start lurches,
-and the one dark column is the breakdown.
-
 ![Nuns in a Moshpit](examples/dadabots-nuns-in-a-moshpit.jpg)
 
-**DADABOTS — Nuns in a Moshpit.** Section boundaries read as hard vertical
-edges, and the colour shifts where the band drops out.
+**DADABOTS — Nuns in a Moshpit.** Section boundaries are obvious w/ color
+shifts.
+
+![43% Burnt](examples/dep-43-burnt.jpg)
+
+**The Dillinger Escape Plan — 43% Burnt.** Dense and loud throughout, so it
+saturates toward white; the vertical seams are stop-start lurches.
 
 ![Not Real](examples/zee-not-real.jpg)
 
