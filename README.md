@@ -3,6 +3,16 @@
 Mel spectrogram thumbnails for audio files. Point it at audio, get a 300×60
 image beside it.
 
+| | |
+|---|---|
+| ![sweep](examples/sweep.jpg) | A 40 Hz → 15 kHz sweep. Bass red at the left, rising through green to blue, mirrored about the centre. |
+| ![noise](examples/noise.jpg) | White noise. Every band at once, so it reads near-white. |
+| ![stereo](examples/stereo.jpg) | 80 Hz in the left channel, 5 kHz in the right. The halves disagree, which is what stereo looks like. |
+| ![bass](examples/bass.jpg) | A 60 Hz tone — bass only. |
+| ![mid](examples/mid.jpg) | An 800 Hz tone — mid only. |
+| ![treble](examples/treble.jpg) | A 6 kHz tone — highs only. |
+| ![beat](examples/beat.jpg) | 100 Hz and 2 kHz together, amplitude-modulated. Red and blue, pulsing. |
+
 ```bash
 python dadaspec.py song.mp3             # writes song.jpg next to it
 python dadaspec.py tracks/              # every audio file in a directory
