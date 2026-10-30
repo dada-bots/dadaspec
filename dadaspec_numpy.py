@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""dadaspec (numpy) — render a mel spectrogram thumbnail for an audio file.
+"""dadaspec — render a mel spectrogram thumbnail for an audio file.
 
     python dadaspec_numpy.py song.mp3        # writes song.jpg beside it
     python dadaspec_numpy.py tracks/ -f      # a whole directory, re-rendering
 
-Needs numpy, Pillow and soundfile. dadaspec_torch.py is the same renderer on
-torch: given the same input samples the two agree exactly, pixel for pixel.
-They can still differ on a lossy file, because mp3 decoders disagree about
-where the audio starts -- torchaudio returns a few hundred more samples than
-soundfile for the same mp3, which shifts every frame after it.
+Needs numpy, Pillow and soundfile.
 
 The image is 300x60. Top half is the left channel with bass at the bottom,
 bottom half is the right with bass at the top, so the halves mirror and a
