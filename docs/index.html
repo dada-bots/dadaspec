@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dadaspec</title>
+<meta name="description" content="Mel spectrogram thumbnails for audio files. Scrub the spectrogram to seek.">
+<style>
+  :root {
+    --bg: #07080a;
+    --panel: #101317;
+    --line: #22272e;
+    --text: #e8ecf1;
+    --dim: #8b949e;
+    --accent: #7fd1ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 48px 16px 72px;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.6 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1100px; margin: 0 auto; }
+  header { margin-bottom: 40px; }
+  h1 { font-size: 2.2rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+  .tagline { color: var(--dim); margin: 0 0 14px; }
+  .repo-link { color: var(--accent); text-decoration: none; border-bottom: 1px solid #ffffff22; }
+  .repo-link:hover { border-bottom-color: var(--accent); }
+
+  .track {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 18px 14px;
+    margin-bottom: 22px;
+  }
+  .track h2 { font-size: 1.02rem; font-weight: 650; margin: 0 0 12px; }
+  .track h2 .by { color: var(--dim); font-weight: 400; }
+  audio { width: 100%; height: 38px; display: block; margin-bottom: 10px; }
+
+  .spec-wrap {
+    position: relative; cursor: pointer; border-radius: 6px; overflow: hidden;
+    user-select: none; -webkit-user-select: none; touch-action: none;
+    background: #000; outline: none;
+  }
+  .spec-wrap:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .spec {
+    width: 100%; height: 150px; display: block;
+    mix-blend-mode: screen;          /* black -> transparent against the panel */
+  }
+  .playhead {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 3px;
+    background: #fff; pointer-events: none; opacity: 0;
+    box-shadow: 0 0 4px rgba(255,255,255,0.6);
+    transform: translateX(-1px);
+  }
+  .spec-wrap.armed .playhead { opacity: 1; }
+  .caption { color: var(--dim); font-size: 0.9rem; margin: 10px 2px 0; }
+  .time {
+    float: right; font-variant-numeric: tabular-nums; color: var(--dim);
+    font-size: 0.82rem;
+  }
+  footer { color: var(--dim); font-size: 0.86rem; margin-top: 40px; }
+  @media (max-width: 640px) { .spec { height: 104px; } body { padding-top: 28px; } }
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <h1>dadaspec</h1>
+  <p class="tagline">Mel spectrogram thumbnails for audio files. Click or drag a spectrogram to seek.</p>
+  <a class="repo-link" href="https://github.com/dada-bots/dadaspec">github.com/dada-bots/dadaspec</a>
+</header>
+
+<main id="tracks"></main>
+
+<footer>
+  Top half is the left channel with bass at the bottom; bottom half is the right
+  channel, mirrored. Bass reads red, mid green, high blue, each band normalised
+  on its own.
+</footer>
+</div>
+
+<script>
+const TRACKS = [
+  { slug: "dadabots-nuns-in-a-moshpit",
+    artist: "DADABOTS", title: "Nuns in a Moshpit",
+    caption: "Section boundaries are obvious w/ color shifts." },
+  { slug: "zee-not-real",
+    artist: "Zebbler Encanti Experience", title: "Not Real",
+    caption: "Electronic, so the structure is blockier: sustained bass along the centre line, quiet passages going dark between drops." },
+];
+
+const fmt = (s) => {
+  if (!isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60), r = Math.floor(s % 60);
+  return m + ":" + String(r).padStart(2, "0");
+};
+
+const main = document.getElementById("tracks");
+const players = [];
+
+for (const t of TRACKS) {
+  const sec = document.createElement("section");
+  sec.className = "track";
+  sec.innerHTML = `
+    <h2>${t.artist} <span class="by">&mdash; ${t.title}</span>
+        <span class="time">0:00</span></h2>
+    <audio controls preload="metadata" src="audio/${t.slug}.mp3"></audio>
+    <div class="spec-wrap" tabindex="0" role="slider" aria-valuemin="0"
+         aria-valuemax="100" aria-valuenow="0"
+         aria-label="${t.artist} - ${t.title}: seek">
+      <img class="spec" src="spec/${t.slug}.jpg" alt="Spectrogram of ${t.title}">
+      <div class="playhead"></div>
+    </div>
+    <p class="caption">${t.caption}</p>`;
+  main.appendChild(sec);
+
+  const audio = sec.querySelector("audio");
+  const wrap  = sec.querySelector(".spec-wrap");
+  const head  = sec.querySelector(".playhead");
+  const time  = sec.querySelector(".time");
+  players.push(audio);
+
+  const place = (pct) => {
+    wrap.classList.add("armed");
+    head.style.left = (pct * 100) + "%";
+    wrap.setAttribute("aria-valuenow", Math.round(pct * 100));
+  };
+  const show = () => {
+    if (!audio.duration) return;
+    const pct = audio.currentTime / audio.duration;
+    place(pct);
+    time.textContent = fmt(audio.currentTime) + " / " + fmt(audio.duration);
+  };
+
+  audio.addEventListener("timeupdate", show);
+  audio.addEventListener("seeked", show);
+  audio.addEventListener("loadedmetadata", () => {
+    time.textContent = "0:00 / " + fmt(audio.duration);
+  });
+  // one at a time
+  audio.addEventListener("play", () => {
+    players.forEach(p => { if (p !== audio) p.pause(); });
+    show();
+  });
+
+  const pctFrom = (clientX) => {
+    const r = wrap.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+  };
+  const seekTo = (pct) => {
+    place(pct);
+    if (audio.duration) {
+      audio.currentTime = pct * audio.duration;
+      time.textContent = fmt(audio.currentTime) + " / " + fmt(audio.duration);
+    }
+  };
+
+  let dragging = false;
+  wrap.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    dragging = true;
+    wrap.setPointerCapture(e.pointerId);
+    seekTo(pctFrom(e.clientX));
+  });
+  wrap.addEventListener("pointermove", (e) => {
+    if (dragging) seekTo(pctFrom(e.clientX));
+  });
+  const stop = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    try { wrap.releasePointerCapture(e.pointerId); } catch (_) {}
+  };
+  wrap.addEventListener("pointerup", stop);
+  wrap.addEventListener("pointercancel", stop);
+
+  wrap.addEventListener("keydown", (e) => {
+    if (!audio.duration) return;
+    const step = e.shiftKey ? 30 : 5;
+    if (e.key === "ArrowRight")     seekTo(Math.min(1, (audio.currentTime + step) / audio.duration));
+    else if (e.key === "ArrowLeft") seekTo(Math.max(0, (audio.currentTime - step) / audio.duration));
+    else if (e.key === "Home")      seekTo(0);
+    else if (e.key === "End")       seekTo(0.999);
+    else if (e.key === " ")         { audio.paused ? audio.play() : audio.pause(); }
+    else return;
+    e.preventDefault();
+  });
+}
+</script>
+</body>
+</html>

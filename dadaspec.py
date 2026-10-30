@@ -33,6 +33,7 @@ SPEC_BANDS = [
     (1500, 16000, (0.0, 0.0, 1.0)), # High -> Blue
 ]
 SPEC_W, SPEC_H = 300, 60   # default output size; override per call or with --width/--height
+SPEC_MELS = 30             # mel bins per channel; 2 * this is the real row count
 
 _BAND_COLORS = np.array([c for _, _, c in SPEC_BANDS], dtype=np.float32)
 
@@ -168,7 +169,7 @@ def _mel_channel(y_ch, sr, n_mels=30):
     return S_db, rgb
 
 
-def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H):
+def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS):
     """Render a 3-band tinted stereo mel spectrogram from an array.
 
     `y` is (channels, samples) or (samples,). int16 is scaled to float; float
@@ -176,8 +177,12 @@ def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H):
 
     `width`/`height` default to 300x60. Raising `width` resolves real detail
     up to one pixel per frame (sr/hop_length ~= 15.6 frames/sec, so ~2800 for
-    a 3-minute track); past that it interpolates. `height` is interpolated
-    above 60, which is all there is: 30 mel bins per channel, stacked.
+    a 3-minute track); past that it interpolates.
+
+    Vertically there are `2 * n_mels` real rows, so the default 300x60 is
+    exactly one row per mel bin per channel. A taller image only interpolates
+    those rows unless `n_mels` goes up to match -- that is what makes a rising
+    tone a smooth line rather than a staircase of 2*n_mels treads.
 
     Raises on failure so the caller decides whether that is fatal.
     """
@@ -191,8 +196,8 @@ def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H):
     elif y.shape[0] == 1:
         y = np.repeat(y, 2, axis=0)
 
-    S_L, rgb_L = _mel_channel(y[0], sr)
-    S_R, rgb_R = _mel_channel(y[1], sr)
+    S_L, rgb_L = _mel_channel(y[0], sr, n_mels)
+    S_R, rgb_R = _mel_channel(y[1], sr, n_mels)
 
     nf = min(S_L.shape[1], S_R.shape[1])
     S_L, S_R = S_L[:, :nf], S_R[:, :nf]
@@ -254,13 +259,13 @@ def load_audio(path, target_sr=TARGET_SR):
 
 
 def render_file(audio_path, image_path=None, target_sr=TARGET_SR,
-                width=SPEC_W, height=SPEC_H):
+                width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS):
     """Render one file. Defaults to the audio path with a .jpg suffix."""
     audio_path = Path(audio_path)
     image_path = Path(image_path) if image_path else audio_path.with_suffix(".jpg")
     y, sr = load_audio(audio_path, target_sr)
     image_path.parent.mkdir(parents=True, exist_ok=True)
-    render_to_jpg(y, sr, image_path, width, height)
+    render_to_jpg(y, sr, image_path, width, height, n_mels)
     return image_path
 
 
@@ -277,6 +282,9 @@ def main(argv=None):
                     help=f"output width in pixels (default {SPEC_W})")
     ap.add_argument("-H", "--height", type=int, default=SPEC_H,
                     help=f"output height in pixels (default {SPEC_H})")
+    ap.add_argument("-m", "--mels", type=int, default=SPEC_MELS,
+                    help=f"mel bins per channel; the image has 2x this many real "
+                         f"rows (default {SPEC_MELS})")
     ap.add_argument("--sr", type=int, default=TARGET_SR,
                     help=f"resample before analysis (default {TARGET_SR})")
     ap.add_argument("-f", "--force", action="store_true",
@@ -286,6 +294,9 @@ def main(argv=None):
 
     if a.width < 1 or a.height < 1:
         print("--width and --height must be positive", file=sys.stderr)
+        return 2
+    if a.mels < 1:
+        print("--mels must be positive", file=sys.stderr)
         return 2
 
     files = []
@@ -310,7 +321,7 @@ def main(argv=None):
             skipped += 1
             continue
         try:
-            written = render_file(f, dest, a.sr, a.width, a.height)
+            written = render_file(f, dest, a.sr, a.width, a.height, a.mels)
         except Exception as e:
             print(f"{f}: {type(e).__name__}: {e}", file=sys.stderr)
             failed += 1

@@ -3,6 +3,9 @@
 Mel spectrogram thumbnails for audio files. Point it at audio, get an image
 beside it.
 
+**[DEMO](https://dada-bots.github.io/dadaspec/)** — play a track and scrub its
+spectrogram.
+
 ## Examples
 
 ![Nuns in a Moshpit](examples/dadabots-nuns-in-a-moshpit.jpg)
@@ -42,7 +45,7 @@ python dadaspec.py song.mp3             # writes song.jpg next to it
 python dadaspec.py tracks/              # every audio file in a directory
 python dadaspec.py a.wav b.wav -o out/  # into a directory instead
 python dadaspec.py song.mp3 -f          # re-render an existing image
-python dadaspec.py song.mp3 -W 1600 -H 200   # bigger than the 300x60 default
+python dadaspec.py song.mp3 -W 1600 -H 200 -m 100   # bigger than the default
 ```
 
 From Python:
@@ -51,9 +54,9 @@ From Python:
 from dadaspec import render_file, render_to_jpg
 
 render_file("song.mp3")                        # -> Path("song.jpg"), 300x60
-render_file("song.mp3", width=1600, height=200)
+render_file("song.mp3", width=1600, height=200, n_mels=100)
 render_to_jpg(y, sr, "out.jpg")                # y is (channels, samples) or (samples,)
-render_to_jpg(y, sr, "out.jpg", 1600, 200)
+render_to_jpg(y, sr, "out.jpg", 1600, 200, 100)
 ```
 
 ## Reading the image
@@ -73,21 +76,24 @@ shape, not in absolute level.
 
 ## Size
 
-Output is **300×60** by default. `--width`/`-W` and `--height`/`-H` change it,
-and the two are not symmetric:
+Output is **300×60** by default. `--width`/`-W`, `--height`/`-H` and
+`--mels`/`-m` change it, and the axes are not symmetric:
 
 - **Width** buys real detail. Analysis runs at about 15.6 frames per second,
   so a 3-minute track has ~2800 frames to draw from and 300px throws most of
   them away. Up to one pixel per frame you resolve more; past that it
   interpolates.
-- **Height** interpolates above 60, which is all there is — 30 mel bins per
-  channel, stacked. Taller is easier to look at, not more informative.
+- **Height** has `2 × n_mels` real rows, so the 300×60 default is exactly one
+  row per mel bin per channel. A taller image only interpolates those rows
+  unless `--mels` rises to match. That is the difference between a rising tone
+  drawn as a smooth line and one drawn as a staircase of `2 × n_mels` treads
+  — lengthening the audio only makes the treads wider, never shorter.
 
-The examples above are 1600×200: genuinely wider, merely stretched taller.
+The examples above are 1600×200 at `--mels 100`, so every row is real.
 
 ## Details
 
-30 mel bins, a 2048-point FFT at hop 2048, a Slaney-normalised filterbank
+30 mel bins by default, a 2048-point FFT at hop 2048, a Slaney-normalised filterbank
 capped at 16 kHz, over audio resampled to 32 kHz. Pure numpy and Pillow — no
 torch, no librosa, no scipy.
 
