@@ -15,8 +15,8 @@ shifts.
 
 ![43% Burnt](examples/dep-43-burnt.jpg)
 
-**The Dillinger Escape Plan — 43% Burnt.** Dense and loud throughout, so it
-saturates toward white; the vertical seams are stop-start lurches.
+**The Dillinger Escape Plan — 43% Burnt.** Dense and loud, so it
+saturates toward white. Vertical seams are stop-start lurches. Notice how it fades out.
 
 ![Not Real](examples/zee-not-real.jpg)
 
