@@ -3,7 +3,7 @@
 Mel spectrogram thumbnails for audio files. Point it at audio, get an image
 beside it.
 
-## Real music
+## Examples
 
 ![43% Burnt](examples/dep-43-burnt.jpg)
 
@@ -40,22 +40,6 @@ mirrored about the centre.
 **80 Hz left, 5 kHz right.** The halves disagree — this is what stereo looks
 like.
 
-![bass](examples/bass.jpg)
-
-**60 Hz tone.** Bass only.
-
-![mid](examples/mid.jpg)
-
-**800 Hz tone.** Mid only.
-
-![treble](examples/treble.jpg)
-
-**6 kHz tone.** Highs only.
-
-![beat](examples/beat.jpg)
-
-**100 Hz and 2 kHz together, amplitude-modulated.** Red and blue, pulsing.
-
 ## Usage
 
 ```bash
@@ -63,6 +47,7 @@ python dadaspec.py song.mp3             # writes song.jpg next to it
 python dadaspec.py tracks/              # every audio file in a directory
 python dadaspec.py a.wav b.wav -o out/  # into a directory instead
 python dadaspec.py song.mp3 -f          # re-render an existing image
+python dadaspec.py song.mp3 -W 1600 -H 200   # bigger than the 300x60 default
 ```
 
 From Python:
@@ -70,8 +55,10 @@ From Python:
 ```python
 from dadaspec import render_file, render_to_jpg
 
-render_file("song.mp3")            # -> Path("song.jpg")
-render_to_jpg(y, sr, "out.jpg")    # y is (channels, samples) or (samples,)
+render_file("song.mp3")                        # -> Path("song.jpg"), 300x60
+render_file("song.mp3", width=1600, height=200)
+render_to_jpg(y, sr, "out.jpg")                # y is (channels, samples) or (samples,)
+render_to_jpg(y, sr, "out.jpg", 1600, 200)
 ```
 
 ## Reading the image
@@ -89,14 +76,25 @@ That per-band normalisation is deliberate: these are thumbnails for scanning a
 list of takes at a glance, not measurement tools. Two images are comparable in
 shape, not in absolute level.
 
+## Size
+
+Output is **300×60** by default. `--width`/`-W` and `--height`/`-H` change it,
+and the two are not symmetric:
+
+- **Width** buys real detail. Analysis runs at about 15.6 frames per second,
+  so a 3-minute track has ~2800 frames to draw from and 300px throws most of
+  them away. Up to one pixel per frame you resolve more; past that it
+  interpolates.
+- **Height** interpolates above 60, which is all there is — 30 mel bins per
+  channel, stacked. Taller is easier to look at, not more informative.
+
+The examples above are 1600×200: genuinely wider, merely stretched taller.
+
 ## Details
 
 30 mel bins, a 2048-point FFT at hop 2048, a Slaney-normalised filterbank
 capped at 16 kHz, over audio resampled to 32 kHz. Pure numpy and Pillow — no
 torch, no librosa, no scipy.
-
-Output is 300×60 by default; set `SPEC_W` and `SPEC_H` for something larger.
-The examples above are 1600×200.
 
 Decoding tries `soundfile`, then `ffmpeg` if it is on PATH. Enough for wav,
 flac, ogg and — on any recent libsndfile — mp3.
