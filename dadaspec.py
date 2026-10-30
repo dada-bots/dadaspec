@@ -34,7 +34,6 @@ SPEC_BANDS = [
 ]
 SPEC_W, SPEC_H = 300, 60   # default output size; override per call or with --width/--height
 SPEC_MELS = 30             # mel bins per channel; 2 * this is the real row count
-PALETTES = ("bands", "ramp")
 
 _BAND_COLORS = np.array([c for _, _, c in SPEC_BANDS], dtype=np.float32)
 
@@ -127,19 +126,24 @@ def _power_to_db(S, top_db=80.0):
     log_spec = 10.0 * np.log10(np.maximum(S, 1e-10))
     return np.maximum(log_spec - log_spec.max(), -top_db)
 
-def _hue_ramp(n_mels):
-    """(n_mels, 3) pure hues, red at the lowest bin through to blue at the
-    highest, walking HSV 0 deg -> 240 deg so yellow, green and cyan each get
-    an even share of the scale instead of appearing only where two hard bands
-    happen to overlap."""
-    import colorsys
-    return np.array(
-        [colorsys.hsv_to_rgb(h, 1.0, 1.0)
-         for h in np.linspace(0.0, 240.0 / 360.0, n_mels)], dtype=np.float32)
+def _mel_channel(y_ch, sr, n_mels=30):
+    """Compute dB-scaled mel + band-tinted RGB for one channel.
 
+    Single mel spectrogram (no redundant STFT), hop=2048 for ~4x fewer frames.
+    """
+    S = _melspectrogram(y_ch, sr, n_mels=n_mels, fmax=16000, hop_length=2048)
 
-def _band_mix(S, mel_f, n_frames):
-    """Three hard bands, each normalised over time, mixed by energy."""
+    # dB-scale with gamma for visual contrast
+    S_db = _power_to_db(S)
+    np.clip(S_db, -60, 0, out=S_db)
+    S_db += 60.0
+    S_db /= 60.0
+    np.power(S_db, 0.6, out=S_db)
+
+    # Band colors from mel bin frequencies (no separate STFT needed)
+    mel_f = _mel_frequencies(n_mels, fmax=16000)
+    n_frames = S.shape[1]
+    # Compute per-band normalized energy, then mix into RGB
     band_norms = np.empty((3, n_frames), dtype=np.float32)
     for i, (flo, fhi, _) in enumerate(SPEC_BANDS):
         mask = (mel_f >= flo) & (mel_f < fhi)
@@ -154,60 +158,18 @@ def _band_mix(S, mel_f, n_frames):
             band_norms[i] = db
         else:
             band_norms[i] = 0.0
-    return band_norms.T @ _BAND_COLORS
 
-
-def _ramp_mix(S, n_mels):
-    """Every mel bin carries its own hue; a frame's colour is its bins'
-    hues summed by energy. Same shape of computation as _band_mix with
-    n_mels bands instead of 3, so a tone sliding up the scale slides
-    through the spectrum instead of stepping red, green, blue."""
-    db = 10.0 * np.log10(S + 1e-10)
-    np.clip(db, -20, None, out=db)
-    db -= -20
-    mx = db.max(axis=1, keepdims=True)
-    np.divide(db, mx, out=db, where=mx > 0)
-    return db.T @ _hue_ramp(n_mels)
-
-
-def _mel_channel(y_ch, sr, n_mels=30, palette="bands"):
-    """Compute dB-scaled mel + tinted RGB for one channel.
-
-    Single mel spectrogram (no redundant STFT), hop=2048 for ~4x fewer frames.
-    `palette` is "bands" (three hard bands) or "ramp" (continuous hue).
-    """
-    S = _melspectrogram(y_ch, sr, n_mels=n_mels, fmax=16000, hop_length=2048)
-
-    # dB-scale with gamma for visual contrast
-    S_db = _power_to_db(S)
-    np.clip(S_db, -60, 0, out=S_db)
-    S_db += 60.0
-    S_db /= 60.0
-    np.power(S_db, 0.6, out=S_db)
-
-    # Colors from mel bin frequencies (no separate STFT needed)
-    if palette == "ramp":
-        rgb = _ramp_mix(S, n_mels)
-        # One scalar for all three channels, so the hue survives. Stretching
-        # R, G and B to full range independently -- which is right for bands,
-        # where the -20 dB gate zeroes the inactive primaries outright -- turns
-        # a steady tone white here, because a continuous ramp always leaks a
-        # little into its neighbours and no channel is ever exactly zero.
-        mx = rgb.max()
+    # (n_frames, 3) = (n_frames, 3_bands) @ (3_bands, 3_rgb)
+    rgb = band_norms.T @ _BAND_COLORS
+    for c in range(3):
+        mx = rgb[:, c].max()
         if mx > 0:
-            rgb /= mx
-    else:
-        rgb = _band_mix(S, _mel_frequencies(n_mels, fmax=16000), S.shape[1])
-        for c in range(3):
-            mx = rgb[:, c].max()
-            if mx > 0:
-                rgb[:, c] /= mx
+            rgb[:, c] /= mx
 
     return S_db, rgb
 
 
-def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS,
-                  palette="bands"):
+def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS):
     """Render a 3-band tinted stereo mel spectrogram from an array.
 
     `y` is (channels, samples) or (samples,). int16 is scaled to float; float
@@ -234,8 +196,8 @@ def render_to_jpg(y, sr, jpg_path, width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS
     elif y.shape[0] == 1:
         y = np.repeat(y, 2, axis=0)
 
-    S_L, rgb_L = _mel_channel(y[0], sr, n_mels, palette)
-    S_R, rgb_R = _mel_channel(y[1], sr, n_mels, palette)
+    S_L, rgb_L = _mel_channel(y[0], sr, n_mels)
+    S_R, rgb_R = _mel_channel(y[1], sr, n_mels)
 
     nf = min(S_L.shape[1], S_R.shape[1])
     S_L, S_R = S_L[:, :nf], S_R[:, :nf]
@@ -297,13 +259,13 @@ def load_audio(path, target_sr=TARGET_SR):
 
 
 def render_file(audio_path, image_path=None, target_sr=TARGET_SR,
-                width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS, palette="bands"):
+                width=SPEC_W, height=SPEC_H, n_mels=SPEC_MELS):
     """Render one file. Defaults to the audio path with a .jpg suffix."""
     audio_path = Path(audio_path)
     image_path = Path(image_path) if image_path else audio_path.with_suffix(".jpg")
     y, sr = load_audio(audio_path, target_sr)
     image_path.parent.mkdir(parents=True, exist_ok=True)
-    render_to_jpg(y, sr, image_path, width, height, n_mels, palette)
+    render_to_jpg(y, sr, image_path, width, height, n_mels)
     return image_path
 
 
@@ -323,9 +285,6 @@ def main(argv=None):
     ap.add_argument("-m", "--mels", type=int, default=SPEC_MELS,
                     help=f"mel bins per channel; the image has 2x this many real "
                          f"rows (default {SPEC_MELS})")
-    ap.add_argument("-p", "--palette", choices=PALETTES, default="bands",
-                    help="bands: three hard bands (default). "
-                         "ramp: one hue per mel bin, red low to blue high")
     ap.add_argument("--sr", type=int, default=TARGET_SR,
                     help=f"resample before analysis (default {TARGET_SR})")
     ap.add_argument("-f", "--force", action="store_true",
@@ -362,8 +321,7 @@ def main(argv=None):
             skipped += 1
             continue
         try:
-            written = render_file(f, dest, a.sr, a.width, a.height, a.mels,
-                                  a.palette)
+            written = render_file(f, dest, a.sr, a.width, a.height, a.mels)
         except Exception as e:
             print(f"{f}: {type(e).__name__}: {e}", file=sys.stderr)
             failed += 1
