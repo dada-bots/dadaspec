@@ -1,29 +1,62 @@
 # dadaspec
 
-Mel spectrogram thumbnails for audio files. Point it at audio, get a 300×60
-image beside it.
+Mel spectrogram thumbnails for audio files. Point it at audio, get an image
+beside it.
 
 ## Real music
 
-| | |
-|---|---|
-| ![43% Burnt](examples/dep-43-burnt.jpg) | **The Dillinger Escape Plan — 43% Burnt**. Dense and loud almost throughout, so it saturates to white; the vertical seams are the time-signature lurches. |
-| ![Nuns in a Moshpit](examples/dadabots-nuns-in-a-moshpit.jpg) | **DADABOTS — Nuns in a Moshpit**. Section boundaries read as hard vertical edges, and the colour shifts where the band drops out. |
-| ![Not Real](examples/zee-not-real.jpg) | **Zebbler Encanti Experience — Not Real**. Electronic, so the structure is blockier: sustained bass red along the centre, quiet passages going dark between drops. |
+![43% Burnt](examples/dep-43-burnt.jpg)
+
+**The Dillinger Escape Plan — 43% Burnt.** Dense and loud almost throughout,
+so it saturates toward white; the vertical seams are the stop-start lurches,
+and the one dark column is the breakdown.
+
+![Nuns in a Moshpit](examples/dadabots-nuns-in-a-moshpit.jpg)
+
+**DADABOTS — Nuns in a Moshpit.** Section boundaries read as hard vertical
+edges, and the colour shifts where the band drops out.
+
+![Not Real](examples/zee-not-real.jpg)
+
+**Zebbler Encanti Experience — Not Real.** Electronic, so the structure is
+blockier: sustained bass along the centre line, quiet passages going dark
+between drops.
 
 ## Synthetic
 
 Each isolates one property of the encoding.
 
-| | |
-|---|---|
-| ![sweep](examples/sweep.jpg) | A 40 Hz → 15 kHz sweep. Bass red at the left, rising through green to blue, mirrored about the centre. |
-| ![noise](examples/noise.jpg) | White noise. Every band at once, so it reads near-white. |
-| ![stereo](examples/stereo.jpg) | 80 Hz in the left channel, 5 kHz in the right. The halves disagree, which is what stereo looks like. |
-| ![bass](examples/bass.jpg) | A 60 Hz tone — bass only. |
-| ![mid](examples/mid.jpg) | An 800 Hz tone — mid only. |
-| ![treble](examples/treble.jpg) | A 6 kHz tone — highs only. |
-| ![beat](examples/beat.jpg) | 100 Hz and 2 kHz together, amplitude-modulated. Red and blue, pulsing. |
+![sweep](examples/sweep.jpg)
+
+**40 Hz → 15 kHz sweep.** Bass red at the left, rising through green to blue,
+mirrored about the centre.
+
+![noise](examples/noise.jpg)
+
+**White noise.** Every band at once, so it reads near-white.
+
+![stereo](examples/stereo.jpg)
+
+**80 Hz left, 5 kHz right.** The halves disagree — this is what stereo looks
+like.
+
+![bass](examples/bass.jpg)
+
+**60 Hz tone.** Bass only.
+
+![mid](examples/mid.jpg)
+
+**800 Hz tone.** Mid only.
+
+![treble](examples/treble.jpg)
+
+**6 kHz tone.** Highs only.
+
+![beat](examples/beat.jpg)
+
+**100 Hz and 2 kHz together, amplitude-modulated.** Red and blue, pulsing.
+
+## Usage
 
 ```bash
 python dadaspec.py song.mp3             # writes song.jpg next to it
@@ -61,6 +94,9 @@ shape, not in absolute level.
 30 mel bins, a 2048-point FFT at hop 2048, a Slaney-normalised filterbank
 capped at 16 kHz, over audio resampled to 32 kHz. Pure numpy and Pillow — no
 torch, no librosa, no scipy.
+
+Output is 300×60 by default; set `SPEC_W` and `SPEC_H` for something larger.
+The examples above are 1600×200.
 
 Decoding tries `soundfile`, then `ffmpeg` if it is on PATH. Enough for wav,
 flac, ogg and — on any recent libsndfile — mp3.
