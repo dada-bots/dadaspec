@@ -3,6 +3,18 @@
 Mel spectrogram thumbnails for audio files. Point it at audio, get a 300×60
 image beside it.
 
+## Real music
+
+| | |
+|---|---|
+| ![43% Burnt](examples/dep-43-burnt.jpg) | **The Dillinger Escape Plan — 43% Burnt**. Dense and loud almost throughout, so it saturates to white; the vertical seams are the time-signature lurches. |
+| ![Nuns in a Moshpit](examples/dadabots-nuns-in-a-moshpit.jpg) | **DADABOTS — Nuns in a Moshpit**. Section boundaries read as hard vertical edges, and the colour shifts where the band drops out. |
+| ![Not Real](examples/zee-not-real.jpg) | **Zebbler Encanti Experience — Not Real**. Electronic, so the structure is blockier: sustained bass red along the centre, quiet passages going dark between drops. |
+
+## Synthetic
+
+Each isolates one property of the encoding.
+
 | | |
 |---|---|
 | ![sweep](examples/sweep.jpg) | A 40 Hz → 15 kHz sweep. Bass red at the left, rising through green to blue, mirrored about the centre. |
