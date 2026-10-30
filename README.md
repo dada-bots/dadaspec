@@ -1,7 +1,8 @@
 # dadaspec
 
-Mel spectrogram thumbnails for audio files. Point it at audio, get an image
-beside it.
+RGB perceptual spectrogram thumbnails for audio files. Point it at audio, get an image.
+
+I've been using this for all my players & demos since forever. It's really nice. It makes music structure rly obvious. Feel free to use. 
 
 **[DEMO](https://dada-bots.github.io/dadaspec/)** — play a track and scrub its
 spectrogram.
