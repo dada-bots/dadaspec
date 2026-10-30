@@ -4,7 +4,8 @@ Mel spectrogram thumbnails for audio files. Point it at audio, get an image
 beside it.
 
 **[DEMO](https://dada-bots.github.io/dadaspec/)** — play a track and scrub its
-spectrogram.
+spectrogram. **[Palettes](https://dada-bots.github.io/dadaspec/palette.html)** —
+three hard bands against a continuous hue ramp, on all six examples.
 
 ## Examples
 
@@ -46,6 +47,7 @@ python dadaspec.py tracks/              # every audio file in a directory
 python dadaspec.py a.wav b.wav -o out/  # into a directory instead
 python dadaspec.py song.mp3 -f          # re-render an existing image
 python dadaspec.py song.mp3 -W 1600 -H 200 -m 100   # bigger than the default
+python dadaspec.py song.mp3 -p ramp                 # continuous hue instead of 3 bands
 ```
 
 From Python:
@@ -66,7 +68,9 @@ the right channel with bass at the top. They mirror around the centre line, so
 a stereo difference shows as asymmetry and a mono file is exactly symmetric.
 
 Brightness is per-bin dB. Hue says which band carries the energy — **bass red,
-mid green, high blue** — and each band is normalised on its own, so a quiet
+mid green, high blue** (or, with `--palette ramp`, one hue per mel bin running
+red to blue with no hard boundaries — see the
+[comparison](https://dada-bots.github.io/dadaspec/palette.html)) — and each band is normalised on its own, so a quiet
 passage still shows colour instead of fading to black. A uniformly loud
 spectrum goes white; one with only low end goes red however loud it is.
 

@@ -2,4 +2,4 @@ __pycache__/
 *.pyc
 *.jpg
 !examples/*.jpg
-!docs/spec/*.jpg
+!docs/**/*.jpg
