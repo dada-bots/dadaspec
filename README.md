@@ -21,10 +21,6 @@ saturates toward white; the vertical seams are stop-start lurches.
 blockier: sustained bass along the centre line, quiet passages going dark
 between drops.
 
-## Synthetic
-
-Each isolates one property of the encoding.
-
 ![sweep](examples/sweep.jpg)
 
 **40 Hz → 15 kHz sweep.** Bass red at the left, rising through green to blue,
@@ -94,6 +90,11 @@ The examples above are 1600×200: genuinely wider, merely stretched taller.
 30 mel bins, a 2048-point FFT at hop 2048, a Slaney-normalised filterbank
 capped at 16 kHz, over audio resampled to 32 kHz. Pure numpy and Pillow — no
 torch, no librosa, no scipy.
+
+Analysis is uncentred: every frame holds real signal, never padding. A centred
+STFT has to invent the ends, and the kink where that padding meets the signal
+reads as broadband energy -- it lights the first and last frame white. The
+trade is the final partial window, under 64 ms.
 
 Decoding tries `soundfile`, then `ffmpeg` if it is on PATH. Enough for wav,
 flac, ogg and — on any recent libsndfile — mp3.

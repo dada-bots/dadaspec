@@ -75,9 +75,23 @@ def _mel_filterbank(n_mels, n_fft, sr, fmax):
     return filt
 
 def _stft_power_np(y_ch, n_fft, hop_length):
-    """numpy twin of torch.stft(center=True, pad_mode='reflect', periodic hann)
-    followed by |.|^2, shaped (n_fft // 2 + 1, n_frames)."""
-    y = np.pad(np.asarray(y_ch, dtype=np.float32), n_fft // 2, mode="reflect")
+    """Power STFT with a periodic Hann window, shaped (n_fft // 2 + 1, n_frames).
+
+    Uncentred on purpose: every frame holds real signal and nothing invented.
+    A centred STFT has to pad the ends, and whatever it pads with is a kink
+    the window reads as broadband energy, so the first and last frame light up
+    white. On a pure 800 Hz tone, the fraction of frame energy falling outside
+    the tone's own band is 1.6e-6 mid-signal but 8.3e-2 in the first frame
+    under reflect padding, and 4.1e-2 under zero or edge padding. Dropping the
+    padding puts the edges back at 8.2e-7 and 3.9e-6.
+
+    The cost is the final partial window, under 64 ms, which no thumbnail
+    resolves. Signals shorter than one window are zero-padded to fill it,
+    since otherwise there would be no frame at all.
+    """
+    y = np.asarray(y_ch, dtype=np.float32)
+    if y.shape[-1] < n_fft:
+        y = np.pad(y, (0, n_fft - y.shape[-1]))
     win = (0.5 - 0.5 * np.cos(2 * np.pi * np.arange(n_fft) / n_fft)).astype(np.float32)
     frames = np.lib.stride_tricks.sliding_window_view(y, n_fft)[::hop_length] * win
     spec = np.fft.rfft(frames, axis=-1)
