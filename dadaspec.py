@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """dadaspec — render a mel spectrogram thumbnail for an audio file.
 
-    python dadaspec_numpy.py song.mp3        # writes song.jpg beside it
-    python dadaspec_numpy.py tracks/ -f      # a whole directory, re-rendering
+    python dadaspec.py song.mp3        # writes song.jpg beside it
+    python dadaspec.py tracks/ -f      # a whole directory, re-rendering
 
 Needs numpy, Pillow and soundfile.
 

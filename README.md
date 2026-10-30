@@ -4,16 +4,16 @@ Mel spectrogram thumbnails for audio files. Point it at audio, get a 300×60
 image beside it.
 
 ```bash
-python dadaspec_numpy.py song.mp3             # writes song.jpg next to it
-python dadaspec_numpy.py tracks/              # every audio file in a directory
-python dadaspec_numpy.py a.wav b.wav -o out/  # into a directory instead
-python dadaspec_numpy.py song.mp3 -f          # re-render an existing image
+python dadaspec.py song.mp3             # writes song.jpg next to it
+python dadaspec.py tracks/              # every audio file in a directory
+python dadaspec.py a.wav b.wav -o out/  # into a directory instead
+python dadaspec.py song.mp3 -f          # re-render an existing image
 ```
 
 From Python:
 
 ```python
-from dadaspec_numpy import render_file, render_to_jpg
+from dadaspec import render_file, render_to_jpg
 
 render_file("song.mp3")            # -> Path("song.jpg")
 render_to_jpg(y, sr, "out.jpg")    # y is (channels, samples) or (samples,)
